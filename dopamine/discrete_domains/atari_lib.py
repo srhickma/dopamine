@@ -51,6 +51,7 @@ import gym
 from gym.spaces.box import Box
 import numpy as np
 import tensorflow as tf
+from dopamine.noisy_net import noisy_dense
 
 
 NATURE_DQN_OBSERVATION_SHAPE = (84, 84)  # Size of downscaled Atari 2600 frame.
@@ -244,6 +245,28 @@ class RainbowNetwork(tf.keras.Model):
     probabilities = tf.keras.activations.softmax(logits)
     q_values = tf.reduce_sum(self.support * probabilities, axis=2)
     return RainbowNetworkType(q_values, logits, probabilities)
+
+
+class NoisyRainbowNetwork(RainbowNetwork):
+  """The convolutional network used to compute agent's return distributions."""
+
+  def __init__(self, num_actions, num_atoms, support, name=None):
+    """Creates the layers used calculating return distributions.
+
+    Args:
+      num_actions: int, number of actions.
+      num_atoms: int, the number of buckets of the value function distribution.
+      support: tf.linspace, the support of the Q-value distribution.
+      name: str, used to crete scope for network parameters.
+    """
+    super().__init__(num_actions, num_atoms, support, name=name)
+    activation_fn = tf.keras.activations.relu
+    self.dense1 = noisy_dense.NoisyDense(
+        512, activation=activation_fn,
+        kernel_initializer=self.kernel_initializer, name='fully_connected')
+    self.dense2 = noisy_dense.NoisyDense(
+        num_actions * num_atoms, kernel_initializer=self.kernel_initializer,
+        name='fully_connected')
 
 
 class ImplicitQuantileNetwork(tf.keras.Model):
