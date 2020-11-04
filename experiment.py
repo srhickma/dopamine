@@ -18,6 +18,27 @@ import numpy as np
 import tensorflow as tf
 import tf_slim
 
+HUMAN_SCORE = 1652
+RANDOM_SCORE = 148
+
+
+def performance_metrics(scores):
+    """Compute the metrics for the scores.
+    This function uses Numpy to calculate the scores because it does matrix operations efficiently.
+    Args:
+    scores (np.ndarray): a 2d array of the form N x #experiments
+    Returns the metrics as a #experiments x #metrics np.ndarray
+    """
+    human_normalized_scores = (scores - RANDOM_SCORE)/(HUMAN_SCORE - RANDOM_SCORE)
+    return np.stack([
+        scores.min(axis=0),
+        *np.percentile(scores, [25, 50, 75], axis=0),
+        scores.max(axis=0),
+        scores.mean(axis=0),
+        scores.std(axis=0),
+        np.median(human_normalized_scores, axis=0)
+    ], axis=1)
+
 
 def reload_checkpoint(checkpoint_path, session):
   """Load TF checkpoint and restore into agent session"""
@@ -91,6 +112,9 @@ class MyRunner(run_experiment.Runner):
 
     print(f'Running game with seed {seed}')
 
+    if visualizer is not None:
+      self._environment.visualizer_step_handler = visualizer.visualize
+
     initial_observation = self._environment.reset()
     action = self._agent.begin_episode(initial_observation)
     while True:
@@ -118,8 +142,9 @@ class MyRunner(run_experiment.Runner):
 
     if visualizer is not None:
       visualizer.generate_video()
+      self._environment.visualizer_step_handler = None
 
-    return total_reward
+    return int(total_reward)
 
   def run_full_experiment(self, record_path):
     if not tf.io.gfile.exists(record_path):
@@ -130,7 +155,7 @@ class MyRunner(run_experiment.Runner):
     scores = []
     seeds = []
 
-    for game_number in range(0, 4):
+    for game_number in range(0, 50):
       print(f'Starting game {game_number}')
 
       seed = game_number
@@ -139,7 +164,7 @@ class MyRunner(run_experiment.Runner):
       scores.append(score)
       seeds.append(seed)
 
-    # TODO calculate 5 number summary here!
+    print(f'Performance metrics: {performance_metrics(np.array(scores)[:, None])}')
 
     print(f'Visualizing best game')
 

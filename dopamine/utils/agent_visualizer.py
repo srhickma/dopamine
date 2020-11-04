@@ -121,6 +121,6 @@ class AgentVisualizer(object):
     os.chdir(self.record_path)
     file_regex = self.filename_format.replace('{:', '%').replace('}', '')
     file_regex += '.png'
-    subprocess.call(['ffmpeg', '-r', '30', '-f', 'image2', '-s', '1920x1080',
+    subprocess.call(['ffmpeg', '-r', '60', '-f', 'image2', '-s', '1920x1080',
                      '-i', file_regex, '-vcodec', 'libx264', '-crf', '25',
                      '-pix_fmt', 'yuv420p', video_file])

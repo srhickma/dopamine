@@ -404,6 +404,8 @@ class AtariPreprocessing(object):
     self.game_over = False
     self.lives = 0  # Will need to be set by reset().
 
+    self.visualizer_step_handler = None
+
   @property
   def observation_space(self):
     # Return the observation space adjusted to match the shape of the processed
@@ -484,6 +486,9 @@ class AtariPreprocessing(object):
       # grayscale image from the ALE. This is a little faster.
       _, reward, game_over, info = self.environment.step(action)
       accumulated_reward += reward
+
+      if self.visualizer_step_handler is not None:
+        self.visualizer_step_handler()
 
       if self.terminal_on_life_loss:
         new_lives = self.environment.ale.lives()
