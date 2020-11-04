@@ -1,4 +1,5 @@
 """A factorized noisy linear layer."""
+import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras import initializers
 from tensorflow.keras.layers import Dense

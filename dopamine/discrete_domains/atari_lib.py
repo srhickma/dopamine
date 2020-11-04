@@ -247,6 +247,7 @@ class RainbowNetwork(tf.keras.Model):
     return RainbowNetworkType(q_values, logits, probabilities)
 
 
+@gin.configurable
 class NoisyRainbowNetwork(RainbowNetwork):
   """The convolutional network used to compute agent's return distributions."""
 
