@@ -89,7 +89,7 @@ class MyRunner(run_experiment.Runner):
   def _run_one_iteration(self, iteration):
     statistics = iteration_statistics.IterationStatistics()
     logging.info('Starting iteration %d', iteration)
-    _, _ = self._run_eval_phase(statistics)
+    _, _, _ = self._run_eval_phase(statistics)
     return statistics.data_lists
 
   def build_visualizer(self, record_path):

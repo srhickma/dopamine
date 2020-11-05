@@ -21,6 +21,7 @@ from __future__ import print_function
 import os
 import sys
 import time
+from statistics import median
 
 from absl import logging
 
@@ -352,6 +353,7 @@ class Runner(object):
     step_count = 0
     num_episodes = 0
     sum_returns = 0.
+    returns = []
 
     while step_count < min_steps:
       episode_length, episode_return = self._run_one_episode()
@@ -361,6 +363,7 @@ class Runner(object):
       })
       step_count += episode_length
       sum_returns += episode_return
+      returns.append(episode_return)
       num_episodes += 1
       # We use sys.stdout.write instead of logging so as to flush frequently
       # without generating a line break.
@@ -368,7 +371,8 @@ class Runner(object):
                        'Episode length: {} '.format(episode_length) +
                        'Return: {}\r'.format(episode_return))
       sys.stdout.flush()
-    return step_count, sum_returns, num_episodes
+
+    return step_count, sum_returns, median(returns), num_episodes
 
   def _run_train_phase(self, statistics):
     """Run training phase.
@@ -385,7 +389,7 @@ class Runner(object):
     # Perform the training phase, during which the agent learns.
     self._agent.eval_mode = False
     start_time = time.time()
-    number_steps, sum_returns, num_episodes = self._run_one_phase(
+    number_steps, sum_returns, _, num_episodes = self._run_one_phase(
         self._training_steps, statistics, 'train')
     average_return = sum_returns / num_episodes if num_episodes > 0 else 0.0
     statistics.append({'train_average_return': average_return})
@@ -412,13 +416,13 @@ class Runner(object):
     """
     # Perform the evaluation phase -- no learning.
     self._agent.eval_mode = True
-    _, sum_returns, num_episodes = self._run_one_phase(
+    _, sum_returns, median_return, num_episodes = self._run_one_phase(
         self._evaluation_steps, statistics, 'eval')
     average_return = sum_returns / num_episodes if num_episodes > 0 else 0.0
     logging.info('Average undiscounted return per evaluation episode: %.2f',
                  average_return)
     statistics.append({'eval_average_return': average_return})
-    return num_episodes, average_return
+    return num_episodes, average_return, median_return
 
   def _run_one_iteration(self, iteration):
     """Runs one iteration of agent/environment interaction.
@@ -438,13 +442,14 @@ class Runner(object):
     logging.info('Starting iteration %d', iteration)
     num_episodes_train, average_reward_train, average_steps_per_second = (
         self._run_train_phase(statistics))
-    num_episodes_eval, average_reward_eval = self._run_eval_phase(
+    num_episodes_eval, average_reward_eval, median_return_eval = self._run_eval_phase(
         statistics)
 
     self._save_tensorboard_summaries(iteration, num_episodes_train,
                                      average_reward_train, num_episodes_eval,
                                      average_reward_eval,
-                                     average_steps_per_second)
+                                     average_steps_per_second,
+                                     median_return_eval)
     return statistics.data_lists
 
   def _save_tensorboard_summaries(self, iteration,
@@ -452,7 +457,8 @@ class Runner(object):
                                   average_reward_train,
                                   num_episodes_eval,
                                   average_reward_eval,
-                                  average_steps_per_second):
+                                  average_steps_per_second,
+                                  median_return_eval):
     """Save statistics as tensorboard summaries.
 
     Args:
@@ -474,7 +480,9 @@ class Runner(object):
         tf.compat.v1.Summary.Value(
             tag='Eval/NumEpisodes', simple_value=num_episodes_eval),
         tf.compat.v1.Summary.Value(
-            tag='Eval/AverageReturns', simple_value=average_reward_eval)
+            tag='Eval/AverageReturns', simple_value=average_reward_eval),
+        tf.compat.v1.Summary.Value(
+            tag='Eval/MedianReturn', simple_value=median_return_eval)
     ])
     self._summary_writer.add_summary(summary, iteration)
 
