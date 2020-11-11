@@ -1,9 +1,44 @@
 """A factorized noisy linear layer."""
 import tensorflow as tf
+from tensorflow import nn
 from tensorflow.keras import backend as K
 from tensorflow.keras import initializers
 from tensorflow.keras.layers import Dense
-from tensorflow.python.keras.layers.ops import core as core_ops
+
+if not tf.config.list_physical_devices('GPU'):
+  from tensorflow.python.keras.layers.ops import core as core_ops
+
+
+def core_ops_dense(inputs,
+                   kernel,
+                   bias,
+                   activation,
+                   dtype,
+                   units):
+  """Add a GPU-compatible core ops dense function.
+
+  Adapted from the Tensorflow source code.
+  """
+  rank = inputs.shape.rank
+  if rank is not None and rank > 2:
+    # Broadcasting is required for the inputs.
+    outputs = tf.tensordot(inputs, kernel, [[rank - 1], [0]])
+    # Reshape the output back to the original ndim of the input.
+    if not tf.executing_eagerly():
+      shape = inputs.shape.as_list()
+      output_shape = shape[:-1] + [units]
+      outputs.set_shape(output_shape)
+  else:
+    inputs = tf.cast(inputs, dtype)
+    if K.is_sparse(inputs):
+      outputs = tf.sparse.sparse_tensor_dense_matmul(inputs, kernel)
+    else:
+      outputs = tf.linalg.matmul(inputs, kernel)
+  if bias is not None:
+    outputs = nn.bias_add(outputs, bias)
+  if activation is not None:
+    return activation(outputs)  # pylint: disable=not-callable
+  return outputs
 
 
 class NoisyDense(Dense):
@@ -65,14 +100,24 @@ class NoisyDense(Dense):
           mean=0.,
           stddev=1.,
           dtype=inputs.dtype
-      )
-      return core_ops.dense(
-        inputs,
-        kernel,
-        bias,
-        self.activation,
-        dtype=self._compute_dtype_object
-      )
+        )
+      if tf.config.list_physical_devices('GPU'):
+        return core_ops_dense(
+          inputs,
+          kernel,
+          bias,
+          self.activation,
+          dtype=self._compute_dtype,
+          units=self.p
+        )
+      else:
+        return core_ops.dense(
+          inputs,
+          kernel,
+          bias,
+          self.activation,
+          dtype=self._compute_dtype_object
+        )
 
     call = super().call
     def normal():
