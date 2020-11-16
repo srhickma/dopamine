@@ -76,19 +76,21 @@ Steps executed: 5903 Episode length: 1203 Return: -19.
 ```
 
 To get finer-grained information about the process,
-you can adjust the experiment parameters in the gin file.
-This is useful if you want to inspect log files or checkpoints, which
+the experiment parameters in the gin file can be adjusted.
+This is useful to inspect log files or checkpoints, which
 are generated at the end of each iteration.
 
 More generally, the whole project is easily configured using the
 [gin configuration framework](https://github.com/google/gin-config).
 
+To continue training from a previous checkpoint, run the same command as to begin
+training, but with the same base_dir. The checkpoint will automatically be loaded
+and the agent will continue from where it left off.
+
 To visualize the returns as an agent trains, run:
 ```
 tensorboard --logdir {base_dir}
 ```
-where base_dir is the base directory inputted when training the agent.
-
 
 ### References
 
@@ -113,27 +115,6 @@ Conference on Learning Representations, 2016.][prioritized_replay]
 
 [Fortunato et al., *Noisy Networks For Exploration*, Proceedings of the International
 Conference on Learning Representations, 2018.][noisy_net]
-
-### Giving credit
-
-If you use Dopamine in your work, we ask that you cite our
-[white paper][dopamine_paper]. Here is an example BibTeX entry:
-
-```
-@article{castro18dopamine,
-  author    = {Pablo Samuel Castro and
-               Subhodeep Moitra and
-               Carles Gelada and
-               Saurabh Kumar and
-               Marc G. Bellemare},
-  title     = {Dopamine: {A} {R}esearch {F}ramework for {D}eep {R}einforcement {L}earning},
-  year      = {2018},
-  url       = {http://arxiv.org/abs/1812.06110},
-  archivePrefix = {arXiv}
-}
-```
-
-
 
 [machado]: https://jair.org/index.php/jair/article/view/11182
 [ale]: https://jair.org/index.php/jair/article/view/10819
