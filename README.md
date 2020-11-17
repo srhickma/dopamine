@@ -1,9 +1,5 @@
 # Space Invaders with Reinforcement Learning
 
-<div align="center">
-  <img src="https://google.github.io/dopamine/images/dopamine_logo.png"><br><br>
-</div>
-
 This is the Group 2 research project for CS486 at the University of Waterloo. It is built on top of
 Google's [Dopamine](https://github.com/google/dopamine) research framework.
 Our goal is to expand upon the Dopamine framework to provide an agent more closely resembling the
@@ -23,6 +19,8 @@ of the previous Dopamine implementation. Our pre-processing thus follows the sam
 [Machado et al. (2018)][machado].
 
 ## Instructions
+
+### Setup
 This project requires Python 3.6 and above.
 
 To run experiments, the project needs to be downloaded via git clone.
@@ -43,24 +41,21 @@ pip install -U pip
 pip install -r requirements.txt
 ```
 
-### Running tests
-
-You can test whether the installation was successful by running the following:
-
-```
-export PYTHONPATH=$PYTHONPATH:$PWD
-python -m tests.dopamine.atari_init_test
-```
-
 ### Training agents
 
 The entry point to the standard Atari 2600 experiment is
 [`dopamine/discrete_domains/train.py`](https://github.com/google/dopamine/blob/master/dopamine/discrete_domains/train.py).
-To run the Noisy Net Rainbow agent:
-
+To train the DRA:
 ```
 python -um dopamine.discrete_domains.train \
-  --base_dir /tmp/noisy_net_run \
+  --base_dir /tmp/dra_run \
+  --gin_files dopamine/agents/rainbow/configs/rainbow.gin
+```
+
+To train the Noisy DRA:
+```
+python -um dopamine.discrete_domains.train \
+  --base_dir /tmp/noisy_dra_run \
   --gin_files dopamine/agents/rainbow/configs/noisy_rainbow.gin
 ```
 
@@ -92,7 +87,24 @@ To visualize the returns as an agent trains, run:
 tensorboard --logdir {base_dir}
 ```
 
-### References
+### Running the experiment
+To run the 50 game experiment on the 200th iteration's checkpoint of an agent with base directory `/tmp/noisy_dra_run`:
+```
+python3 experiment.py \
+    --root_dir results \
+    --restore_checkpoint /tmp/noisy_dra_run/checkpoints/tf_ckpt-199
+```
+This will create a `results` folder in the current directory with a video of the game with the highest score.
+
+The 7 number summary and human normalized scores are printed to stdout as an array once the experiment completes:
+```
+Performance metrics: [[1.17500000e+03 8.75625000e+03 1.63375000e+04 2.39187500e+04
+  3.15000000e+04 1.63375000e+04 1.51625000e+04 1.07642952e+01]]
+```
+The performance metrics, in order, are: min, 25th percentile, 50th percentile, 75th percentile, max, mean,
+standard deviation, and median human normalized score.
+
+## References
 
 [Bellemare et al., *The Arcade Learning Environment: An evaluation platform for
 general agents*. Journal of Artificial Intelligence Research, 2013.][ale]
